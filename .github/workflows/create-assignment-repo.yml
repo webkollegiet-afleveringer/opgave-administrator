@@ -104,11 +104,11 @@ jobs:
           # Check if repo exists
           REPO_REF="webkollegiet-afleveringer/$REPO_NAME"
           REPO_VIEW_STATUS=0
-          REPO_VIEW_OUTPUT=$(gh api "repos/$REPO_REF" 2>&1) || REPO_VIEW_STATUS=$?
+          REPO_VIEW_OUTPUT=$(gh api --include --silent "repos/$REPO_REF" 2>&1) || REPO_VIEW_STATUS=$?
 
           if [ "$REPO_VIEW_STATUS" -eq 0 ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-          elif echo "$REPO_VIEW_OUTPUT" | grep -q "HTTP 404"; then
+          elif echo "$REPO_VIEW_OUTPUT" | grep -qE '^HTTP/[0-9.]+ 404'; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
           else
             echo "::error::Unable to check whether $REPO_REF already exists."
