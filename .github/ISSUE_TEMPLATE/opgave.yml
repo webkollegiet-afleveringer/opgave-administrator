@@ -7,7 +7,7 @@ body:
   - type: input
     id: github-username
     attributes:
-      label: Github brugernavn
+      label: GitHub brugernavn
       description: Skriv dit brugernavn som du benytter når du logger på GitHub
     validations:
       required: true
