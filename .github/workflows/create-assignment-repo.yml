@@ -1,0 +1,139 @@
+name: Create assignment repo
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: write
+
+jobs:
+  create-repo:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.ORG_PAT }}
+      ASSIGNMENTS_JSON: ${{ vars.ASSIGNMENTS_JSON || '' }}
+    steps:
+      - name: Checkout assignments config
+        uses: actions/checkout@v4
+        # If assignments.json isn't in this repo, download it from another source
+        # or store it as a GitHub Variable (ASSIGNMENTS_JSON) instead
+
+      - name: Parse fields from issue
+        id: fields
+        run: |
+          set -euo pipefail
+
+          TITLE="${{ github.event.issue.title }}"
+          BODY="${{ github.event.issue.body }}"
+          USERNAME="${{ github.event.issue.user.login }}"
+
+          # Title expected format: "CS101 linje04" → extract "cs101-linje04"
+          ASSIGNMENT_KEY=$(echo "$TITLE" | tr -s ' ' | tr ' ' '-' | tr '[:upper:]' '[:lower:]')
+
+          # Extract student name from body if present ("Deres navn:" or "Name:")
+          STUDENT_NAME=$(echo "$BODY" | grep -i "Deres navn:\|Name:" | sed -E 's/.*(Deres navn:|Name:) *//' | head -1 || true)
+
+          # Validate
+          if [ -z "$ASSIGNMENT_KEY" ] || [ -z "$USERNAME" ]; then
+            echo "::error::Could not parse assignment key or GitHub username."
+            exit 1
+          fi
+
+          echo "assignment_key=$ASSIGNMENT_KEY" >> "$GITHUB_OUTPUT"
+          echo "student_name=$STUDENT_NAME" >> "$GITHUB_OUTPUT"
+          echo "username=$USERNAME" >> "$GITHUB_OUTPUT"
+
+      - name: Look up template repo
+        id: template
+        run: |
+          set -euo pipefail
+
+          ASSIGNMENT_KEY="${{ steps.fields.outputs.assignment_key }}"
+
+          # Try local file first
+          if [ -f "assignments.json" ]; then
+            TEMPLATE_REPO=$(jq -r --arg k "$ASSIGNMENT_KEY" '.[$k] // ""' assignments.json)
+          elif [ -n "$ASSIGNMENTS_JSON" ]; then
+            TEMPLATE_REPO=$(echo "$ASSIGNMENTS_JSON" | jq -r --arg k "$ASSIGNMENT_KEY" '.[$k] // ""')
+          else
+            TEMPLATE_REPO=""
+          fi
+
+          if [ -z "$TEMPLATE_REPO" ]; then
+            echo "::warning::No template found for assignment '$ASSignment_KEY'. Check assignments.json."
+            echo "template_repo=ERROR" >> "$GITHUB_OUTPUT"
+          else
+            echo "template_repo=$TEMPLATE_REPO" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail on unknown assignment
+        if: steps.template.outputs.template_repo == 'ERROR'
+        run: |
+          gh issue comment "${{ github.event.issue.html_url }}" --body \
+            "❌ **Oppgave ikke funnet**: `${{ steps.fields.outputs.assignment_key }}`
+            Dette oppdraget er ikke konfigurert enda. Ta kontakt med din lærer."
+          gh issue close "${{ github.event.issue.html_url }}" --reason "not planned"
+          exit 0
+
+      - name: Construct and check repo name
+        id: repo
+        run: |
+          COURSE_ASSIGNMENT="${{ steps.fields.outputs.assignment_key }}"
+          USERNAME="${{ steps.fields.outputs.username }}"
+          REPO_NAME="${COURSE_ASSIGNMENT}-${USERNAME}"
+
+          # Sanitize
+          REPO_NAME=$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]' | tr '_' '-' | sed 's/[^a-z0-9-]//g;s/-\+/-/g')
+
+          echo "repo_name=$REPO_NAME" >> "$GITHUB_OUTPUT"
+
+          # Check if repo exists
+          if gh repo view "webkollegiet-afleveringer/$REPO_NAME" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail on duplicate repo name
+        if: steps.repo.outputs.exists == 'true'
+        run: |
+          gh issue comment "${{ github.event.issue.html_url }}" --body \
+            "⚠️ En eksisterende repo med navnet **${{ steps.repo.outputs.repo_name }}** ble oppdaget.
+             Dette skjer sjeldent men kan skyldes duplikat-innsending. Ta kontakt hvis du tror dette er feil."
+          gh issue close "${{ github.event.issue.html_url }}" --reason "duplicate"
+          exit 0
+
+      - name: Create repo from template
+        run: |
+          TEMPLATE_REPO="${{ steps.template.outputs.template_repo }}"
+          REPO_NAME="${{ steps.repo.outputs.repo_name }}"
+          STUDENT_NAME="${{ steps.fields.outputs.student_name }}"
+          USERNAME="${{ steps.fields.outputs.username }}"
+
+          DESC="Assignment repo for $USERNAME $(if [ -n "$STUDENT_NAME" ]; then echo "($STUDENT_NAME)"; fi)"
+
+          gh repo create "webkollegiet-afleveringer/$REPO_NAME" \
+            --template "webkollegiet-afleveringer/$TEMPLATE_REPO" \
+            --private \
+            --description "$DESC"
+
+      - name: Add student as collaborator
+        run: |
+          USERNAME="${{ steps.fields.outputs.username }}"
+          REPO_NAME="${{ steps.repo.outputs.repo_name }}"
+
+          gh api -X PUT \
+            "repos/webkollegiet-afleveringer/$REPO_NAME/collaborators/$USERNAME" \
+            -f permission=push
+
+      - name: Comment success on issue
+        run: |
+          REPO_NAME="${{ steps.repo.outputs.repo_name }}"
+          gh issue comment "${{ github.event.issue.html_url }}" --body \
+            "✅ Din repo er klar: **$REPO_NAME**
+             Du har fått tilgang som bidragsyter. Godkjenn invitasjonen her:
+             https://github.com/webkollegiet-afleveringer/$REPO_NAME/invitations"
+          gh issue add-label "${{ github.event.issue.html_url }}" "provisioned"
+          gh issue close "${{ github.event.issue.html_url }}" --reason completed
