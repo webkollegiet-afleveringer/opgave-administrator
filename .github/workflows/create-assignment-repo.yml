@@ -169,5 +169,5 @@ jobs:
             "✅ Dit repository er klar: **$REPO_NAME**
              Du har fået adgang som collaborator. Godkend invitationen her:
              https://github.com/webkollegiet-afleveringer/$REPO_NAME/invitations"
-          gh issue add-label "${{ github.event.issue.html_url }}" "provisioned"
+          gh issue edit "${{ github.event.issue.number }}" --add-label provisioned
           gh issue close "${{ github.event.issue.html_url }}" --reason completed
