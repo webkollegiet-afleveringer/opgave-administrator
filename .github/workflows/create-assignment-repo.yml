@@ -62,7 +62,7 @@ jobs:
           fi
 
           if [ -z "$TEMPLATE_REPO" ]; then
-            echo "::warning::No template found for assignment '$ASSignment_KEY'. Check assignments.json."
+            echo "::warning::No template found for assignment '$ASSIGNMENT_KEY'. Check assignments.json."
             echo "template_repo=ERROR" >> "$GITHUB_OUTPUT"
           else
             echo "template_repo=$TEMPLATE_REPO" >> "$GITHUB_OUTPUT"
