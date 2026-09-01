@@ -108,7 +108,7 @@ jobs:
 
           if [ "$REPO_VIEW_STATUS" -eq 0 ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-          elif echo "$REPO_VIEW_OUTPUT" | grep -qE '^HTTP/[0-9.]+ 404'; then
+          elif echo "$REPO_VIEW_OUTPUT" | grep -qE '^HTTP/[^ ]+ 404'; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
           else
             echo "::error::Unable to check whether $REPO_REF already exists."
