@@ -77,9 +77,21 @@ jobs:
           gh issue close "${{ github.event.issue.html_url }}" --reason "not planned"
           exit 0
 
+      - name: Verify GitHub auth and repo access
+        run: |
+          set -euo pipefail
+
+          TEMPLATE_REPO="${{ steps.template.outputs.template_repo }}"
+
+          gh auth status
+          gh api "orgs/webkollegiet-afleveringer" >/dev/null
+          gh repo view "$TEMPLATE_REPO" >/dev/null
+
       - name: Construct and check repo name
         id: repo
         run: |
+          set -euo pipefail
+
           COURSE_ASSIGNMENT="${{ steps.fields.outputs.assignment_key }}"
           USERNAME="${{ steps.fields.outputs.username }}"
           REPO_NAME="${COURSE_ASSIGNMENT}-${USERNAME}"
@@ -90,10 +102,17 @@ jobs:
           echo "repo_name=$REPO_NAME" >> "$GITHUB_OUTPUT"
 
           # Check if repo exists
-          if gh repo view "webkollegiet-afleveringer/$REPO_NAME" >/dev/null 2>&1; then
+          REPO_REF="webkollegiet-afleveringer/$REPO_NAME"
+          REPO_VIEW_OUTPUT=$(gh api "repos/$REPO_REF" 2>&1) || REPO_VIEW_STATUS=$?
+
+          if [ "${REPO_VIEW_STATUS:-0}" -eq 0 ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
+          elif echo "$REPO_VIEW_OUTPUT" | grep -q "HTTP 404"; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Unable to check whether $REPO_REF already exists."
+            echo "$REPO_VIEW_OUTPUT"
+            exit 1
           fi
 
       - name: Fail on duplicate repo name
@@ -107,6 +126,8 @@ jobs:
 
       - name: Create repo from template
         run: |
+          set -euo pipefail
+
           TEMPLATE_REPO="${{ steps.template.outputs.template_repo }}"
           REPO_NAME="${{ steps.repo.outputs.repo_name }}"
           STUDENT_NAME="${{ steps.fields.outputs.student_name }}"
@@ -115,7 +136,7 @@ jobs:
           DESC="Assignment repo for $USERNAME $(if [ -n "$STUDENT_NAME" ]; then echo "($STUDENT_NAME)"; fi)"
 
           gh repo create "webkollegiet-afleveringer/$REPO_NAME" \
-            --template "webkollegiet-afleveringer/$TEMPLATE_REPO" \
+            --template "$TEMPLATE_REPO" \
             --private \
             --description "$DESC"
 
