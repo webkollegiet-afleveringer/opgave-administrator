@@ -32,9 +32,9 @@ jobs:
                                       found && NF {print; exit}'
           }
 
-          RAW_NAME=$(extract_field "Name")
-          GITHUB_USERNAME=$(extract_field "GitHub username")
-          COURSE_ID=$(extract_field "Course ID")
+          RAW_NAME=$(extract_field "Navn")
+          GITHUB_USERNAME=$(extract_field "GitHub brugernavn")
+          COURSE_ID=$(extract_field "Hold")
 
           # Sanitize name: lowercase, spaces/slashes -> hyphens, keep alnum + hyphen
           SAFE_NAME=$(echo "$RAW_NAME" | tr '[:upper:]' '[:lower:]' \
@@ -42,7 +42,7 @@ jobs:
 
           # Unique, safe repo name: courseID-githubUsername
           REPO_NAME=$(echo "${COURSE_ID}-${GITHUB_USERNAME}" \
-                      | tr '[:upper:]' '[:lower:]' | tr ' /_' '-'
+                      | tr '[:upper:]' '[:lower:]' | tr ' /_' '-' \
                       | sed 's/[^a-z0-9-]//g;s/-\+/-/g;s/^-//;s/-$//')
 
           if [ -z "$REPO_NAME" ] || [ -z "$GITHUB_USERNAME" ]; then
