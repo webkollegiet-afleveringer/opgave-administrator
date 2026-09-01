@@ -26,15 +26,3 @@ body:
       placeholder: WU16, WU17
     validations:
       required: true
-  - type: hidden
-    id: template-repo
-    attributes:
-      label: template-repo
-      # Navn på Template Repository
-      value: test-opgave
-  - type: hidden
-    id: temaplate-owner
-    attributes:
-      label: template-owner
-      # Navn på organisation hvor opgave-repoet bor
-      value: webkollegiet-opgaver
