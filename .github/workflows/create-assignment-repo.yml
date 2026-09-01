@@ -96,6 +96,7 @@ jobs:
         run: |
           set -euo pipefail
 
+          COURSE_NAME="${{ steps.fields.outputs.course_name }}"
           COURSE_ASSIGNMENT="${{ steps.fields.outputs.assignment_key }}"
           USERNAME="${{ steps.fields.outputs.username }}"
           REPO_NAME="${COURSE_NAME}-${COURSE_ASSIGNMENT}-${USERNAME}"
