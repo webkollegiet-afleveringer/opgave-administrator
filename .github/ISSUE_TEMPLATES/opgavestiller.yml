@@ -1,4 +1,7 @@
 name: Opret opgave
+description: Indtast oplysninger for at få din opgave udleveret.
+title: "Opret Opgave"
+labels: ["opgaver"]
 body:
 	- type: input
 		id: github-username
