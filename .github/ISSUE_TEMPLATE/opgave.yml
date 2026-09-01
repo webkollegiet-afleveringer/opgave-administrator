@@ -18,3 +18,11 @@ body:
       description: Dit fulde navn
     validations:
       required: true
+  - type: input
+    id: class
+    attributes:
+      label: Hold
+      description: Dit hold nummer
+      placeholder: WU16, WU17
+    validations:
+      required: true
