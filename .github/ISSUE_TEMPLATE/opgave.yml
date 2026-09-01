@@ -1,0 +1,19 @@
+name: Opret opgave
+description: Indtast oplysninger for at få din opgave udleveret.
+title: "Opret Opgave"
+labels: ["opgaver"]
+body:
+	- type: input
+		id: github-username
+		attributes:
+			label: Github brugernavn
+			description: Skriv dit brugernavn som du benytter når du logger på GitHub
+		validations:
+			required: true
+	- type: input
+		id: name
+		attributes:
+			label: Navn
+			description: Dit fulde navn
+		validations:
+			required: true
