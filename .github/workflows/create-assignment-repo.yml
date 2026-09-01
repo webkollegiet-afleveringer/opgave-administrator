@@ -33,7 +33,10 @@ jobs:
           ASSIGNMENT_KEY=$(echo "$TITLE" | tr -s ' ' | tr ' ' '-' | tr '[:upper:]' '[:lower:]')
 
           # Extract student name from body if present ("Deres navn:" or "Name:")
-          STUDENT_NAME=$(echo "$BODY" | grep -i "Deres navn:\|Name:" | sed -E 's/.*(Deres navn:|Name:) *//' | head -1 || true)
+          STUDENT_NAME=$(echo "$BODY" | grep -i "Navn:\|Name:" | sed -E 's/.*(Navn:|Name:) *//' | head -1 || true)
+          
+          # Extract course name from body if present ("Hold:" or "Course:")
+          COURSE_NAME=$(echo "$BODY" | grep -i "Hold:\|Course:" | sed -E 's/.*(Hold:|Course:) *//' | head -1 || true)
 
           # Validate
           if [ -z "$ASSIGNMENT_KEY" ] || [ -z "$USERNAME" ]; then
@@ -72,8 +75,8 @@ jobs:
         if: steps.template.outputs.template_repo == 'ERROR'
         run: |
           gh issue comment "${{ github.event.issue.html_url }}" --body \
-            "❌ **Oppgave ikke funnet**: `${{ steps.fields.outputs.assignment_key }}`
-            Dette oppdraget er ikke konfigurert enda. Ta kontakt med din lærer."
+            "❌ **Opgaven blev ikke fundet**: `${{ steps.fields.outputs.assignment_key }}`
+            Denne opgave er endnu ikke konfigureret. Tag kontakt til din lærer."
           gh issue close "${{ github.event.issue.html_url }}" --reason "not planned"
           exit 0
 
@@ -94,7 +97,7 @@ jobs:
 
           COURSE_ASSIGNMENT="${{ steps.fields.outputs.assignment_key }}"
           USERNAME="${{ steps.fields.outputs.username }}"
-          REPO_NAME="${COURSE_ASSIGNMENT}-${USERNAME}"
+          REPO_NAME="${COURSE_NAME}-${COURSE_ASSIGNMENT}-${USERNAME}"
 
           # Sanitize
           REPO_NAME=$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]' | tr '_' '-' | sed 's/[^a-z0-9-]//g;s/-\+/-/g')
@@ -122,8 +125,8 @@ jobs:
         if: steps.repo.outputs.exists == 'true'
         run: |
           gh issue comment "${{ github.event.issue.html_url }}" --body \
-            "⚠️ En eksisterende repo med navnet **${{ steps.repo.outputs.repo_name }}** ble oppdaget.
-             Dette skjer sjeldent men kan skyldes duplikat-innsending. Ta kontakt hvis du tror dette er feil."
+            "⚠️ Der findes allerede et repository med navnet **${{ steps.repo.outputs.repo_name }}**.
+             Det sker sjældent men kan skyldes duplikat-indsending. Tag kontakt til din lærer hvis du tror dette er en fejl."
           gh issue close "${{ github.event.issue.html_url }}" --reason "duplicate"
           exit 0
 
@@ -156,8 +159,8 @@ jobs:
         run: |
           REPO_NAME="${{ steps.repo.outputs.repo_name }}"
           gh issue comment "${{ github.event.issue.html_url }}" --body \
-            "✅ Din repo er klar: **$REPO_NAME**
-             Du har fått tilgang som bidragsyter. Godkjenn invitasjonen her:
+            "✅ Dit repository er klar: **$REPO_NAME**
+             Du har fået adgang som collaborator. Godkend invitationen her:
              https://github.com/webkollegiet-afleveringer/$REPO_NAME/invitations"
           gh issue add-label "${{ github.event.issue.html_url }}" "provisioned"
           gh issue close "${{ github.event.issue.html_url }}" --reason completed
