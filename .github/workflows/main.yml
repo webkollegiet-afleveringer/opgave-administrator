@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.ORG_PAT }}       # PAT with repo + admin:org
-      TEMPLATE_REPO: https://github.com/webkollegiet-opgaver/test-opgave.git         # your template repo name
+      TEMPLATE_REPO: webkollegiet-opgaver/test-opgave         # your template repo name
       ISSUE_BODY: ${{ github.event.issue.body }}
       ISSUE_URL: ${{ github.event.issue.html_url }}
     steps:
@@ -78,8 +78,8 @@ jobs:
         if: steps.exists.outcome == 'failure'
         run: |
           gh repo create "${{ github.repository_owner }}/${{ steps.fields.outputs.repo_name }}" \
-            --template "${{ github.repository_owner }}/$TEMPLATE_REPO" \
-            --private \
+            --template "$TEMPLATE_REPO" \
+            --public \
             --description "Course repo for @${{ steps.fields.outputs.username }} (${{ steps.fields.outputs.safe_name }})"
 
       - name: Add student as collaborator
