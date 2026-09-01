@@ -81,11 +81,6 @@ jobs:
           gh issue close "${{ github.event.issue.html_url }}" --reason "not planned"
           exit 0
 
-      - name: Install GitHub CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gh
-
       - name: Verify GitHub auth and repo access
         run: |
           set -euo pipefail
