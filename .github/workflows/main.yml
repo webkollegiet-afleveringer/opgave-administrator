@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.ORG_PAT }}       # PAT with repo + admin:org
-      TEMPLATE_REPO: webkollegiet-opgaver/test-opgave         # your template repo name
+      TEMPLATE_REPO: https://github.com/webkollegiet-opgaver/test-opgave.git         # your template repo name
       ISSUE_BODY: ${{ github.event.issue.body }}
       ISSUE_URL: ${{ github.event.issue.html_url }}
     steps:
