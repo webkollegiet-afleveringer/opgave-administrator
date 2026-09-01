@@ -106,9 +106,11 @@ jobs:
           REPO_VIEW_STATUS=0
           REPO_VIEW_OUTPUT=$(gh api --include "repos/$REPO_REF" 2>&1) || REPO_VIEW_STATUS=$?
 
-          if [ "$REPO_VIEW_STATUS" -eq 0 ]; then
+          if echo "$REPO_VIEW_OUTPUT" | grep -qE '^HTTP/[^ ]+ 404'; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          elif [ "$REPO_VIEW_STATUS" -eq 0 ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-          elif [ "$REPO_VIEW_STATUS" -eq 1 ] && echo "$REPO_VIEW_OUTPUT" | grep -qE '(^HTTP/[^ ]+ 404|Not Found)'; then
+          elif echo "$REPO_VIEW_OUTPUT" | grep -q "Not Found"; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
           else
             echo "::error::Unable to check whether $REPO_REF already exists."
