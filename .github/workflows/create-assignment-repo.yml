@@ -47,6 +47,7 @@ jobs:
           echo "assignment_key=$ASSIGNMENT_KEY" >> "$GITHUB_OUTPUT"
           echo "student_name=$STUDENT_NAME" >> "$GITHUB_OUTPUT"
           echo "username=$USERNAME" >> "$GITHUB_OUTPUT"
+          echo "course_name=$COURSE_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Look up template repo
         id: template
